@@ -1,0 +1,51 @@
+name: pmf
+version: '1.0.0'
+config-version: 2
+
+profile: pmf
+
+model-paths: ["models"]
+macro-paths: ["macros"]
+seed-paths:  ["seeds"]
+test-paths:  ["tests"]
+
+models:
+  pmf:
+    +materialized: table
+
+# ── Metric definitions ──────────────────────────────────────────────────────
+# Add a new metric by adding an entry here and running:
+#   dbt run --vars '{"metrics": ["your_metric"]}'
+#
+# Each metric must define:
+#   source_table    : fully qualified table name (schema.table)
+#   entity_id       : the "who" column (user_id, merchant_id, …)
+#   time_column     : event timestamp column
+#   value_expr      : SQL aggregate expression per entity per period
+#   is_binary       : true = MAU-style (no expansion/contraction)
+#   time_grains     : list of grains to generate (monthly, weekly, daily)
+#   row_filter      : optional WHERE clause (omit or set to null)
+
+vars:
+  metrics:
+    gmv:
+      source_table: "your_schema.orders"   # ← change this to your table
+      entity_id:    "user_id"
+      time_column:  "created_at"
+      value_expr:   "SUM(amount)"
+      is_binary:    false
+      time_grains:  ["monthly", "weekly"]
+      row_filter:   "status = 'completed'"
+
+    active_users:
+      source_table: "your_schema.events"   # ← change this to your table
+      entity_id:    "user_id"
+      time_column:  "event_at"
+      value_expr:   "COUNT(DISTINCT user_id)"
+      is_binary:    true
+      time_grains:  ["monthly", "weekly", "daily"]
+      grain_labels:
+        monthly: "mau"
+        weekly:  "wau"
+        daily:   "dau"
+      row_filter:   null
